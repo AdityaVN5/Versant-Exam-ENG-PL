@@ -73,6 +73,71 @@ export default function Results({ attempt, onBack, onNavigateToDiagnostics }: Re
           </p>
         </header>
 
+        {/* Dynamic Items Response Analysis Report Card */}
+        {score.responses && score.responses.length > 0 && (
+          <div className="p-8 md:p-12 border-b border-neutral-200 bg-[#FAFAFA]">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 border-b border-neutral-200 pb-6">
+              <div>
+                <span className="text-[10px] uppercase font-bold tracking-widest text-[#171717] bg-neutral-200 px-2 py-1">AI Evaluator</span>
+                <h3 className="text-2xl font-serif italic tracking-tight mt-2 text-neutral-900">Consolidated Item-by-Item AI Feedback</h3>
+              </div>
+              <p className="text-xs text-neutral-500 max-w-sm">
+                Each response was evaluated by our simulated speech calibration and syntactic matching rating rules.
+              </p>
+            </div>
+
+            <div className="space-y-6">
+              {score.responses.map((item, index) => (
+                <div key={index} className="bg-white border border-neutral-200 p-6 hover:border-black transition-all">
+                  <div className="flex items-start justify-between gap-4 flex-wrap mb-4">
+                    <div>
+                      <span className="text-[9px] uppercase tracking-wider font-mono font-bold text-neutral-400">
+                        {item.sectionTitle}
+                      </span>
+                      <h4 className="text-xs font-bold text-black mt-1 font-mono">Question ID: {item.questionId}</h4>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">AI Match Rating:</span>
+                      <span className="px-2 py-1 border border-neutral-200 font-mono text-xs font-extrabold text-neutral-900">
+                        {item.aiScore}/90
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="grid md:grid-cols-2 gap-6 text-xs leading-relaxed">
+                    <div className="space-y-2">
+                      <p className="uppercase tracking-widest text-[9px] font-bold text-neutral-400">Original Prompt Context</p>
+                      <blockquote className="border-l-2 border-neutral-300 pl-3 italic text-neutral-600 font-serif">
+                        "{item.promptText}"
+                      </blockquote>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <p className="uppercase tracking-widest text-[9px] font-bold text-neutral-400">Your Recorded Response</p>
+                      <div className="bg-neutral-50 border border-neutral-200 p-3 italic font-semibold text-neutral-800 rounded">
+                        {item.userResponse}
+                      </div>
+                      {item.audioBlobBase64 && (
+                        <div className="mt-3">
+                          <audio src={item.audioBlobBase64} controls className="w-full h-8 outline-none" />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="mt-4 pt-3 border-t border-neutral-100 flex items-start gap-2 text-xs bg-stone-50 p-3 rounded">
+                    <Lightbulb className="w-4 h-4 text-stone-600 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-bold text-stone-900 block text-[9px] uppercase tracking-wider mb-1">AI Diagnostic Note</span>
+                      <p className="text-stone-700 leading-relaxed font-sans">{item.evaluationNote}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Top Stats Section */}
         <div className="flex flex-col lg:flex-row border-b border-neutral-200">
           
@@ -265,89 +330,17 @@ export default function Results({ attempt, onBack, onNavigateToDiagnostics }: Re
           </div>
         </div>
 
-        {/* Dynamic Items Response Analysis Report Card */}
-        {score.responses && score.responses.length > 0 && (
-          <div className="p-8 md:p-12 border-t border-neutral-200 bg-[#FAFAFA]">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 border-b border-neutral-200 pb-6">
-              <div>
-                <span className="text-[10px] uppercase font-bold tracking-widest text-[#171717] bg-neutral-200 px-2 py-1">AI Evaluator</span>
-                <h3 className="text-2xl font-serif italic tracking-tight mt-2 text-neutral-900">Consolidated Item-by-Item AI Feedback</h3>
-              </div>
-              <p className="text-xs text-neutral-500 max-w-sm">
-                Each response was evaluated by our simulated speech calibration and syntactic matching rating rules.
-              </p>
-            </div>
-
-            <div className="space-y-6">
-              {score.responses.map((item, index) => (
-                <div key={index} className="bg-white border border-neutral-200 p-6 hover:border-black transition-all">
-                  <div className="flex items-start justify-between gap-4 flex-wrap mb-4">
-                    <div>
-                      <span className="text-[9px] uppercase tracking-wider font-mono font-bold text-neutral-400">
-                        {item.sectionTitle}
-                      </span>
-                      <h4 className="text-xs font-bold text-black mt-1 font-mono">Question ID: {item.questionId}</h4>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">AI Match Rating:</span>
-                      <span className="px-2 py-1 border border-neutral-200 font-mono text-xs font-extrabold text-neutral-900">
-                        {item.aiScore}/90
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="grid md:grid-cols-2 gap-6 text-xs leading-relaxed">
-                    <div className="space-y-2">
-                      <p className="uppercase tracking-widest text-[9px] font-bold text-neutral-400">Original Prompt Context</p>
-                      <blockquote className="border-l-2 border-neutral-300 pl-3 italic text-neutral-600 font-serif">
-                        "{item.promptText}"
-                      </blockquote>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <p className="uppercase tracking-widest text-[9px] font-bold text-neutral-400">Your Recorded Response</p>
-                      <div className="bg-neutral-50 border border-neutral-200 p-3 italic font-semibold text-neutral-800 rounded">
-                        {item.userResponse}
-                      </div>
-                      {item.audioBlobBase64 && (
-                        <div className="mt-3">
-                          <audio src={item.audioBlobBase64} controls className="w-full h-8 outline-none" />
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="mt-4 pt-3 border-t border-neutral-100 flex items-start gap-2 text-xs bg-stone-50 p-3 rounded">
-                    <Lightbulb className="w-4 h-4 text-stone-600 shrink-0 mt-0.5" />
-                    <div>
-                      <span className="font-bold text-stone-900 block text-[9px] uppercase tracking-wider mb-1">AI Diagnostic Note</span>
-                      <p className="text-stone-700 leading-relaxed font-sans">{item.evaluationNote}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Navigation / Diagnostic invitation trigger Panel */}
-        {onNavigateToDiagnostics && (
-          <div className="p-8 md:p-12 border-t border-neutral-200 bg-white flex flex-col md:flex-row items-center justify-between gap-8">
-            <div className="max-w-2xl">
-              <span className="text-[9px] uppercase font-bold tracking-widest text-[#171717] px-2 py-0.5 border border-[#171717]">Quick calibration</span>
-              <h3 className="text-2xl font-serif italic tracking-tight mt-3 mb-2 text-[#171717]">Test Microphone Setup with Part J?</h3>
-              <p className="text-xs text-neutral-500 leading-relaxed max-w-xl font-sans">
-                You can immediately launch **Part J Diagnostic Repeat Test** consisting of only 2 questions. After completion, a standalone high fidelity calibration scorecard is generated inside your attempts lists.
-              </p>
-            </div>
-            <button
-              onClick={onNavigateToDiagnostics}
-              className="w-full md:w-auto px-8 py-4 bg-black text-white text-[11px] font-bold uppercase tracking-[0.2em] hover:opacity-90 transition-all font-sans shrink-0 uppercase tracking-widest"
-            >
-              ⚡ Click to Start Part J Diagnostic
-            </button>
-          </div>
-        )}
+        {/* Footer */}
+        <footer className="py-12 border-t border-neutral-200 bg-[#FAFAFA] text-center text-xs">
+          <a
+            href="https://adityavn.vercel.app/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-mono font-bold tracking-widest text-neutral-600 hover:text-black transition-colors"
+          >
+            ║▌║█║ FORGED 𝖡𝖸 ADITYA ║█║▌║
+          </a>
+        </footer>
 
       </div>
     </div>
