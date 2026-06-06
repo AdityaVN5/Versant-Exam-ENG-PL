@@ -4,7 +4,12 @@ import { QuestionPhase, TestResult, Question } from '../types';
 import { playTTS, playBeep, SilenceDetector } from '../lib/audioUtils';
 import { Mic, Loader2, PlayCircle, EyeOff, CheckCircle, ArrowRight, BookOpen, Compass, Award } from 'lucide-react';
 
-export default function TestEngine({ onComplete }: { onComplete: (results: TestResult[]) => void }) {
+interface TestEngineProps {
+  onComplete: (results: TestResult[]) => void;
+  targetSectionId?: string;
+}
+
+export default function TestEngine({ onComplete, targetSectionId }: TestEngineProps) {
   const [modIdx, setModIdx] = useState(0);
   const [secIdx, setSecIdx] = useState(0);
   const [qIdx, setQIdx] = useState(0);
@@ -27,7 +32,13 @@ export default function TestEngine({ onComplete }: { onComplete: (results: TestR
   const skipTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const currentModule = mockExamData.modules[modIdx];
-  const currentSection = currentModule?.sections[secIdx];
+  
+  // Filter sections if a targetSectionId is passed (e.g. 'part-j' diagnostic)
+  const availableSections = targetSectionId 
+    ? currentModule.sections.filter(s => s.id === targetSectionId)
+    : currentModule.sections;
+
+  const currentSection = availableSections[secIdx];
   const currentQuestion = currentSection?.questions[qIdx];
 
   const cleanupTimers = () => {
@@ -47,7 +58,11 @@ export default function TestEngine({ onComplete }: { onComplete: (results: TestR
   // Global Progress Logic
   const advanceQuestion = (result?: TestResult) => {
     if (result) {
-      setResults(prev => [...prev, result]);
+      setResults(prev => {
+        // Prevent duplicate results for the same questionId
+        const base = prev.filter(r => r.questionId !== result.questionId);
+        return [...base, result];
+      });
     }
     setCurrentText('');
 
@@ -60,19 +75,17 @@ export default function TestEngine({ onComplete }: { onComplete: (results: TestR
       nextSec++;
       setShowSectionIntro(true); // Always pop up instructions when advancing to a new section/part!
     }
-    if (nextSec >= currentModule.sections.length) {
-      nextSec = 0;
-      nextMod++;
+    if (nextSec >= availableSections.length) {
+      // Completed last section of the test run!
+      const finalResults = results.filter(r => r.questionId !== (result?.questionId));
+      onComplete(finalResults.concat(result ? [result] : []));
+      return;
     }
 
-    if (nextMod >= mockExamData.modules.length) {
-      onComplete(results.concat(result ? [result] : []));
-    } else {
-      setQIdx(nextQ);
-      setSecIdx(nextSec);
-      setModIdx(nextMod);
-      setPhase('buffer');
-    }
+    setQIdx(nextQ);
+    setSecIdx(nextSec);
+    setModIdx(nextMod);
+    setPhase('buffer');
   };
 
   useEffect(() => {
@@ -138,15 +151,49 @@ export default function TestEngine({ onComplete }: { onComplete: (results: TestR
     }
   }, [phase, timeLeft]);
 
+  // Store the transcribed text in a ref so we can access it in the cleanup timeout
+  const transcribedRef = useRef<string>('');
+
   const startRecordingPhase = async () => {
     setPhase('recording');
     setTimeLeft(currentQuestion.timeLimit);
+    transcribedRef.current = "";
+    setCurrentText("");
     
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mr = new MediaRecorder(stream);
       mediaRecorderRef.current = mr;
       audioChunksRef.current = [];
+
+      let recognition: any = null;
+      try {
+        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+        if (SpeechRecognition) {
+          recognition = new SpeechRecognition();
+          recognition.continuous = true;
+          recognition.interimResults = true;
+          recognition.onresult = (event: any) => {
+            let interimTranscript = '';
+            let finalTranscript = '';
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+              const transcript = event.results[i][0].transcript;
+              if (event.results[i].isFinal) {
+                finalTranscript += transcript;
+              } else {
+                interimTranscript += transcript;
+              }
+            }
+            if (finalTranscript) {
+               transcribedRef.current += finalTranscript + " ";
+               setCurrentText(transcribedRef.current);
+            }
+          };
+          recognition.start();
+        }
+      } catch (e) {
+        console.warn("Speech API not supported or failed to start", e);
+      }
 
       mr.ondataavailable = e => {
         if (e.data.size > 0) audioChunksRef.current.push(e.data);
@@ -165,11 +212,14 @@ export default function TestEngine({ onComplete }: { onComplete: (results: TestR
           if (!speechDetected) {
             handleRecordingComplete(true); // skip automatically
           }
-        }, 6000);
+        }, 6000); // 6 seconds to start speaking
       };
 
       mr.onstop = () => {
         stream.getTracks().forEach(t => t.stop());
+        if (recognition) {
+           try { recognition.stop(); } catch(e) {}
+        }
       };
 
       mr.start();
@@ -202,6 +252,7 @@ export default function TestEngine({ onComplete }: { onComplete: (results: TestR
       advanceQuestion({
         questionId: currentQuestion.id,
         blob: skippedDueToSilence ? undefined : blob,
+        text: transcribedRef.current || currentText,
         skipped: skippedDueToSilence
       });
     }, 100);
@@ -227,18 +278,38 @@ export default function TestEngine({ onComplete }: { onComplete: (results: TestR
           <div className="mb-10">
             <h2 className="text-[10px] uppercase tracking-[0.2em] text-neutral-400 font-bold mb-6">Test Progression</h2>
             <div className="space-y-3.5">
-              {currentModule.sections.map((sec, idx) => {
+              {availableSections.map((sec, idx) => {
                 const isActive = idx === secIdx;
                 const isCompleted = idx < secIdx;
                 return (
-                  <div key={sec.id} className={`flex items-center gap-3 ${isCompleted ? 'opacity-35 line-through' : idx > secIdx ? 'text-neutral-400' : ''}`}>
-                    <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-none shrink-0 ${isActive ? 'bg-black text-white' : 'text-neutral-400 border border-neutral-200 bg-neutral-50'}`}>
+                  <button
+                    key={sec.id}
+                    onClick={() => {
+                      cleanupTimers();
+                      stopRecording();
+                      // Auto save any text if current phase is writing
+                      if (phase === 'writing' && currentText.trim()) {
+                        results.push({
+                          questionId: currentQuestion.id,
+                          text: currentText,
+                          skipped: false
+                        });
+                      }
+                      setCurrentText('');
+                      setSecIdx(idx);
+                      setQIdx(0);
+                      setShowSectionIntro(true);
+                      setPhase('buffer');
+                    }}
+                    className={`flex items-center gap-3 w-full text-left transition-all hover:translate-x-1 duration-150 ${isCompleted ? 'opacity-50' : idx > secIdx ? 'text-neutral-400' : ''}`}
+                  >
+                    <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-none shrink-0 ${isActive ? 'bg-black text-white font-black' : 'text-neutral-400 border border-neutral-200 bg-neutral-50'}`}>
                       {String(idx + 1).padStart(2, '0')}
                     </span>
                     <span className={`text-xs tracking-tight ${isActive ? 'font-bold text-black border-b border-black pb-0.5' : 'font-medium'}`}>
                       {sec.title.replace('Part ', '')}
                     </span>
-                  </div>
+                  </button>
                 );
               })}
             </div>

@@ -1,13 +1,31 @@
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer } from 'recharts';
 import { Attempt } from '../types';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Play, AudioLines, Flame, Lightbulb, ClipboardCopy } from 'lucide-react';
 
 interface ResultsProps {
   attempt?: Attempt;
   onBack?: () => void;
+  onNavigateToDiagnostics?: () => void;
 }
 
-export default function Results({ attempt, onBack }: ResultsProps) {
+function getVersant(gse: number): number {
+  return Math.min(80, Math.max(20, gse - 3));
+}
+
+function getCEFR(gse: number): string {
+  if (gse < 22) return '<A1';
+  if (gse < 30) return 'A1';
+  if (gse < 36) return 'A2';
+  if (gse < 43) return 'A2+';
+  if (gse < 51) return 'B1';
+  if (gse < 59) return 'B1+';
+  if (gse < 67) return 'B2';
+  if (gse < 76) return 'B2+';
+  if (gse < 85) return 'C1';
+  return 'C2';
+}
+
+export default function Results({ attempt, onBack, onNavigateToDiagnostics }: ResultsProps) {
   // Let's use the provided attempt or fallback to the standard mock attempt
   const score = attempt || {
     id: 'default',
@@ -18,6 +36,8 @@ export default function Results({ attempt, onBack }: ResultsProps) {
     listening: 73,
     reading: 62,
     writing: 62,
+    isPartJPractice: false,
+    responses: []
   };
 
   const chartData = [
@@ -42,7 +62,6 @@ export default function Results({ attempt, onBack }: ResultsProps) {
               <ArrowLeft className="w-4 h-4" />
               <span>Back to Dashboard</span>
             </button>
-            <span className="text-[10px] uppercase font-mono text-neutral-400 font-bold">TIN: {score.tin}</span>
           </div>
         )}
 
@@ -116,13 +135,9 @@ export default function Results({ attempt, onBack }: ResultsProps) {
 
         {/* Metadata Details */}
         <div className="flex flex-col md:flex-row border-b border-neutral-200 text-xs">
-          <div className="md:w-1/2 p-6 border-b md:border-b-0 md:border-r border-neutral-200 flex justify-between items-center bg-[var(--color-neutral-base)]">
+          <div className="w-full p-6 flex justify-between items-center bg-[var(--color-neutral-base)]">
             <span className="uppercase font-bold tracking-widest text-neutral-400 text-[10px]">Test Completion Date (GMT)</span>
             <span className="font-mono font-bold">{score.date}</span>
-          </div>
-          <div className="md:w-1/2 p-6 flex justify-between items-center bg-[var(--color-neutral-base)]">
-            <span className="uppercase font-bold tracking-widest text-neutral-400 text-[10px]">Test Identification Number (TIN)</span>
-            <span className="font-mono font-bold">{score.tin}</span>
           </div>
         </div>
 
@@ -136,7 +151,7 @@ export default function Results({ attempt, onBack }: ResultsProps) {
              <div>
                <h4 className="font-bold text-black mb-2 uppercase tracking-widest text-[10px]">GSE</h4>
                <p className="mb-4">The Global Scale of English (GSE) is a standardized, granular scale from 10 to 90, which measures English language proficiency. Visit English.com/gse to learn more.</p>
-               <p className="font-mono font-bold text-black text-xs">GSE 64/90 is equivalent to Versant 60/80</p>
+               <p className="font-mono font-bold text-black text-xs">GSE {score.overallScore}/90 is equivalent to Versant {getVersant(score.overallScore)}/80</p>
              </div>
            </div>
         </div>
@@ -152,9 +167,9 @@ export default function Results({ attempt, onBack }: ResultsProps) {
               <div className="flex flex-wrap items-baseline gap-4 mb-4">
                 <h4 className="text-lg font-bold">Speaking</h4>
                 <div className="flex gap-3 text-[10px] font-bold uppercase tracking-widest text-neutral-500 font-mono">
-                  <span>GSE: <strong className="text-black">58/90</strong></span>
-                  <span>Versant: <strong className="text-black">56/80</strong></span>
-                  <span className="px-2 py-0.5 border border-neutral-200 text-black">CEFR: B1+</span>
+                  <span>GSE: <strong className="text-black">{score.speaking}/90</strong></span>
+                  <span>Versant: <strong className="text-black">{getVersant(score.speaking)}/80</strong></span>
+                  <span className="px-2 py-0.5 border border-neutral-200 text-black">CEFR: {getCEFR(score.speaking)}</span>
                 </div>
               </div>
               <p className="text-sm text-[#171717] leading-relaxed mb-6">
@@ -177,9 +192,9 @@ export default function Results({ attempt, onBack }: ResultsProps) {
               <div className="flex flex-wrap items-baseline gap-4 mb-4">
                 <h4 className="text-lg font-bold">Listening</h4>
                 <div className="flex gap-3 text-[10px] font-bold uppercase tracking-widest text-neutral-500 font-mono">
-                  <span>GSE: <strong className="text-black">73/90</strong></span>
-                  <span>Versant: <strong className="text-black">66/80</strong></span>
-                  <span className="px-2 py-0.5 border border-neutral-200 text-black">CEFR: B2+</span>
+                  <span>GSE: <strong className="text-black">{score.listening}/90</strong></span>
+                  <span>Versant: <strong className="text-black">{getVersant(score.listening)}/80</strong></span>
+                  <span className="px-2 py-0.5 border border-neutral-200 text-black">CEFR: {getCEFR(score.listening)}</span>
                 </div>
               </div>
               <p className="text-sm text-[#171717] leading-relaxed mb-6">
@@ -202,9 +217,9 @@ export default function Results({ attempt, onBack }: ResultsProps) {
               <div className="flex flex-wrap items-baseline gap-4 mb-4">
                 <h4 className="text-lg font-bold">Reading</h4>
                 <div className="flex gap-3 text-[10px] font-bold uppercase tracking-widest text-neutral-500 font-mono">
-                  <span>GSE: <strong className="text-black">62/90</strong></span>
-                  <span>Versant: <strong className="text-black">59/80</strong></span>
-                  <span className="px-2 py-0.5 border border-neutral-200 text-black">CEFR: B2</span>
+                  <span>GSE: <strong className="text-black">{score.reading}/90</strong></span>
+                  <span>Versant: <strong className="text-black">{getVersant(score.reading)}/80</strong></span>
+                  <span className="px-2 py-0.5 border border-neutral-200 text-black">CEFR: {getCEFR(score.reading)}</span>
                 </div>
               </div>
               <p className="text-sm text-[#171717] leading-relaxed mb-6">
@@ -227,9 +242,9 @@ export default function Results({ attempt, onBack }: ResultsProps) {
               <div className="flex flex-wrap items-baseline gap-4 mb-4">
                 <h4 className="text-lg font-bold">Writing</h4>
                 <div className="flex gap-3 text-[10px] font-bold uppercase tracking-widest text-neutral-500 font-mono">
-                  <span>GSE: <strong className="text-black">62/90</strong></span>
-                  <span>Versant: <strong className="text-black">59/80</strong></span>
-                  <span className="px-2 py-0.5 border border-neutral-200 text-black">CEFR: B2</span>
+                  <span>GSE: <strong className="text-black">{score.writing}/90</strong></span>
+                  <span>Versant: <strong className="text-black">{getVersant(score.writing)}/80</strong></span>
+                  <span className="px-2 py-0.5 border border-neutral-200 text-black">CEFR: {getCEFR(score.writing)}</span>
                 </div>
               </div>
               <p className="text-sm text-[#171717] leading-relaxed mb-6">
@@ -249,6 +264,90 @@ export default function Results({ attempt, onBack }: ResultsProps) {
 
           </div>
         </div>
+
+        {/* Dynamic Items Response Analysis Report Card */}
+        {score.responses && score.responses.length > 0 && (
+          <div className="p-8 md:p-12 border-t border-neutral-200 bg-[#FAFAFA]">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 border-b border-neutral-200 pb-6">
+              <div>
+                <span className="text-[10px] uppercase font-bold tracking-widest text-[#171717] bg-neutral-200 px-2 py-1">AI Evaluator</span>
+                <h3 className="text-2xl font-serif italic tracking-tight mt-2 text-neutral-900">Consolidated Item-by-Item AI Feedback</h3>
+              </div>
+              <p className="text-xs text-neutral-500 max-w-sm">
+                Each response was evaluated by our simulated speech calibration and syntactic matching rating rules.
+              </p>
+            </div>
+
+            <div className="space-y-6">
+              {score.responses.map((item, index) => (
+                <div key={index} className="bg-white border border-neutral-200 p-6 hover:border-black transition-all">
+                  <div className="flex items-start justify-between gap-4 flex-wrap mb-4">
+                    <div>
+                      <span className="text-[9px] uppercase tracking-wider font-mono font-bold text-neutral-400">
+                        {item.sectionTitle}
+                      </span>
+                      <h4 className="text-xs font-bold text-black mt-1 font-mono">Question ID: {item.questionId}</h4>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">AI Match Rating:</span>
+                      <span className="px-2 py-1 border border-neutral-200 font-mono text-xs font-extrabold text-neutral-900">
+                        {item.aiScore}/90
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="grid md:grid-cols-2 gap-6 text-xs leading-relaxed">
+                    <div className="space-y-2">
+                      <p className="uppercase tracking-widest text-[9px] font-bold text-neutral-400">Original Prompt Context</p>
+                      <blockquote className="border-l-2 border-neutral-300 pl-3 italic text-neutral-600 font-serif">
+                        "{item.promptText}"
+                      </blockquote>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <p className="uppercase tracking-widest text-[9px] font-bold text-neutral-400">Your Recorded Response</p>
+                      <div className="bg-neutral-50 border border-neutral-200 p-3 italic font-semibold text-neutral-800 rounded">
+                        {item.userResponse}
+                      </div>
+                      {item.audioBlobBase64 && (
+                        <div className="mt-3">
+                          <audio src={item.audioBlobBase64} controls className="w-full h-8 outline-none" />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="mt-4 pt-3 border-t border-neutral-100 flex items-start gap-2 text-xs bg-stone-50 p-3 rounded">
+                    <Lightbulb className="w-4 h-4 text-stone-600 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-bold text-stone-900 block text-[9px] uppercase tracking-wider mb-1">AI Diagnostic Note</span>
+                      <p className="text-stone-700 leading-relaxed font-sans">{item.evaluationNote}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Navigation / Diagnostic invitation trigger Panel */}
+        {onNavigateToDiagnostics && (
+          <div className="p-8 md:p-12 border-t border-neutral-200 bg-white flex flex-col md:flex-row items-center justify-between gap-8">
+            <div className="max-w-2xl">
+              <span className="text-[9px] uppercase font-bold tracking-widest text-[#171717] px-2 py-0.5 border border-[#171717]">Quick calibration</span>
+              <h3 className="text-2xl font-serif italic tracking-tight mt-3 mb-2 text-[#171717]">Test Microphone Setup with Part J?</h3>
+              <p className="text-xs text-neutral-500 leading-relaxed max-w-xl font-sans">
+                You can immediately launch **Part J Diagnostic Repeat Test** consisting of only 2 questions. After completion, a standalone high fidelity calibration scorecard is generated inside your attempts lists.
+              </p>
+            </div>
+            <button
+              onClick={onNavigateToDiagnostics}
+              className="w-full md:w-auto px-8 py-4 bg-black text-white text-[11px] font-bold uppercase tracking-[0.2em] hover:opacity-90 transition-all font-sans shrink-0 uppercase tracking-widest"
+            >
+              ⚡ Click to Start Part J Diagnostic
+            </button>
+          </div>
+        )}
 
       </div>
     </div>

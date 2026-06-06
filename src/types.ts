@@ -36,6 +36,18 @@ export interface TestResult {
   blob?: Blob;
   text?: string;
   skipped?: boolean;
+  audioBlobBase64?: string;
+}
+
+export interface AttemptResponse {
+  questionId: string;
+  sectionId: string;
+  sectionTitle: string;
+  promptText: string;
+  userResponse: string; // text transcript or placeholder like "Recorded Voice Sample"
+  aiScore: number;       // calculated similarity range 10-90
+  evaluationNote: string; // smart feedback sentence
+  audioBlobBase64?: string;
 }
 
 export interface Attempt {
@@ -47,5 +59,8 @@ export interface Attempt {
   listening: number;
   reading: number;
   writing: number;
+  isPartJPractice?: boolean;
+  responses?: AttemptResponse[];
 }
+
 

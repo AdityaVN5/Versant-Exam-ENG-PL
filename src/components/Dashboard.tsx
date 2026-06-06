@@ -3,11 +3,12 @@ import { Attempt } from '../types';
 
 interface DashboardProps {
   onStart: () => void;
+  onStartDiagnostic: () => void;
   attempts: Attempt[];
   onViewAttempt: (attempt: Attempt) => void;
 }
 
-export default function Dashboard({ onStart, attempts, onViewAttempt }: DashboardProps) {
+export default function Dashboard({ onStart, onStartDiagnostic, attempts, onViewAttempt }: DashboardProps) {
   return (
     <div className="min-h-screen bg-[var(--color-neutral-base)] flex flex-col items-center justify-start text-[#171717] w-full">
       <div className="w-full bg-white border-x border-neutral-200 p-8 md:p-12 flex flex-col space-y-12 min-h-screen">
@@ -59,12 +60,29 @@ export default function Dashboard({ onStart, attempts, onViewAttempt }: Dashboar
               </div>
             </div>
 
-            <div className="pt-4">
+            {/* Quick Testing Diagnostic Banner */}
+            <div className="bg-stone-50 border border-dashed border-stone-300 p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+              <div className="max-w-md">
+                <span className="text-[9px] font-bold bg-neutral-950 text-white px-2 py-0.5 uppercase tracking-widest">Testing shortcut</span>
+                <h4 className="text-sm font-bold text-black mt-2">Part J: 2-Question Repeat Diagnostic</h4>
+                <p className="text-xs text-neutral-500 mt-1">
+                  Skip the long exam structure. This launches only Part J (consisting of 2 speaking repeat items) to test your audio latency and draft an immediate AI score report.
+                </p>
+              </div>
+              <button
+                onClick={onStartDiagnostic}
+                className="shrink-0 flex items-center gap-2 px-5 py-3 border border-neutral-900 bg-[#FAFAFA] hover:bg-neutral-950 hover:text-white text-neutral-950 text-[10px] font-bold uppercase tracking-widest transition-all"
+              >
+                <span>⚡ Test Part J</span>
+              </button>
+            </div>
+
+            <div className="pt-4 flex flex-col sm:flex-row gap-4">
               <button 
                 onClick={onStart}
-                className="w-full md:w-auto flex items-center justify-center gap-3 px-8 py-4 bg-black text-white text-[11px] font-bold uppercase tracking-[0.2em] hover:opacity-90 transition-all"
+                className="flex-1 sm:flex-initial flex items-center justify-center gap-3 px-8 py-4 bg-black text-white text-[11px] font-bold uppercase tracking-[0.2em] hover:opacity-90 transition-all font-sans"
               >
-                <span>Acknowledge & Start New Test</span>
+                <span>Acknowledge & Start Full Test</span>
                 <Headset className="w-4 h-4" />
               </button>
             </div>
@@ -85,8 +103,8 @@ export default function Dashboard({ onStart, attempts, onViewAttempt }: Dashboar
                   <div key={att.id} className="bg-white border border-neutral-200 p-4 relative group hover:border-black transition-all">
                      <div className="flex justify-between items-start mb-2">
                        <div>
-                         <span className="text-[10px] font-mono text-neutral-400 font-bold uppercase">TIN: {att.tin}</span>
-                         <div className="flex items-center gap-1.5 text-[10px] text-neutral-500 mt-1">
+                         <span className="text-[9px] font-sans font-bold text-neutral-500 uppercase tracking-wider bg-neutral-100 px-2 py-0.5">{att.isPartJPractice ? "Diagnostic Part J" : "Full Exam Practice"}</span>
+                         <div className="flex items-center gap-1.5 text-[10px] text-neutral-500 mt-2">
                             <Calendar className="w-3 h-3 text-neutral-400" />
                             <span>{att.date}</span>
                          </div>

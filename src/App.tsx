@@ -4,6 +4,7 @@ import Login from './components/Login';
 import Dashboard from './components/Dashboard';
 import TestEngine from './components/TestEngine';
 import Results from './components/Results';
+import { generateAiRating } from './utils/scoring';
 
 const INITIAL_ATTEMPT: Attempt = {
   id: 'attempt-1',
@@ -13,13 +14,25 @@ const INITIAL_ATTEMPT: Attempt = {
   speaking: 58,
   listening: 73,
   reading: 62,
-  writing: 62
+  writing: 62,
+  responses: [
+    {
+      questionId: 'a-1',
+      sectionId: 'part-a',
+      sectionTitle: 'Part A: Read Aloud',
+      promptText: 'The local museum is offering free admission this weekend. Visitors can explore a large collection of historical paintings, sculptures, and interactive science displays designed for all ages.',
+      userResponse: 'The local museum is offering free admission this weekend. Visitors can explore some historical pictures...',
+      aiScore: 78,
+      evaluationNote: 'Clear oral fluency. Word boundaries matched displaying high articulation values.'
+    }
+  ]
 };
 
 export default function App() {
   const [status, setStatus] = useState<TestStatus>('login');
   const [attempts, setAttempts] = useState<Attempt[]>([]);
   const [viewingAttempt, setViewingAttempt] = useState<Attempt | null>(null);
+  const [targetSectionId, setTargetSectionId] = useState<string | undefined>(undefined);
 
   // Initialize attempts from localStorage or default list
   useEffect(() => {
@@ -36,20 +49,27 @@ export default function App() {
     }
   }, []);
 
-  const handleComplete = (finalResults: TestResult[]) => {
-    // Determine user score based on percentage of non-skipped items
-    const totalQuestions = finalResults.length || 1;
-    const answeredCount = finalResults.filter(r => !r.skipped).length;
-    const performanceRatio = answeredCount / totalQuestions;
+  const handleStartExam = (sectionId?: string) => {
+    setTargetSectionId(sectionId);
+    setStatus('testing');
+  };
 
-    // Map ratio into realistic GSE scale (10 to 90)
-    const baseGSE = Math.round(15 + performanceRatio * 72); // max 87 score
-    const speakingScore = Math.max(10, Math.min(90, Math.round(baseGSE - 4 + Math.random() * 8)));
-    const listeningScore = Math.max(10, Math.min(90, Math.round(baseGSE + 5 + Math.random() * 6)));
-    const readingScore = Math.max(10, Math.min(90, Math.round(baseGSE + Math.random() * 4)));
-    const writingScore = Math.max(10, Math.min(90, Math.round(baseGSE - 1 + Math.random() * 6)));
-    
-    const overallScore = Math.round((speakingScore + listeningScore + readingScore + writingScore) / 4);
+  const handleComplete = async (finalResults: TestResult[]) => {
+    // First, map the blobs to base64
+    const resultsWithBase64 = await Promise.all(finalResults.map(async (r) => {
+      if (r.blob) {
+        const base64 = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(r.blob!);
+        });
+        return { ...r, audioBlobBase64: base64 };
+      }
+      return r;
+    }));
+
+    // Determine user score based on percentage of non-skipped items
+    const aiReport = generateAiRating(resultsWithBase64);
 
     // Create unique TIN number
     const tinNumber = String(Math.floor(10000000 + Math.random() * 90000000));
@@ -63,11 +83,13 @@ export default function App() {
       id: `attempt-${Date.now()}`,
       date: today,
       tin: tinNumber,
-      overallScore,
-      speaking: speakingScore,
-      listening: listeningScore,
-      reading: readingScore,
-      writing: writingScore
+      overallScore: aiReport.overallScore,
+      speaking: aiReport.speaking,
+      listening: aiReport.listening,
+      reading: aiReport.reading,
+      writing: aiReport.writing,
+      isPartJPractice: targetSectionId === 'part-j',
+      responses: aiReport.responses
     };
 
     const updatedAttempts = [newAttempt, ...attempts];
@@ -85,6 +107,7 @@ export default function App() {
 
   const handleBackToDashboard = () => {
     setViewingAttempt(null);
+    setTargetSectionId(undefined);
     setStatus('dashboard');
   };
 
@@ -92,23 +115,24 @@ export default function App() {
     <div className="min-h-screen bg-[var(--color-neutral-base)] text-[#171717] font-sans selection:bg-neutral-200">
       {/* If the user is currently viewing a specific attempt scorecard */}
       {viewingAttempt ? (
-        <Results attempt={viewingAttempt} onBack={handleBackToDashboard} />
+        <Results attempt={viewingAttempt} onBack={handleBackToDashboard} onNavigateToDiagnostics={() => handleStartExam('part-j')} />
       ) : (
         <>
           {status === 'login' && <Login onLogin={() => setStatus('dashboard')} />}
           
           {status === 'dashboard' && (
             <Dashboard 
-              onStart={() => setStatus('testing')} 
+              onStart={() => handleStartExam(undefined)} 
+              onStartDiagnostic={() => handleStartExam('part-j')}
               attempts={attempts}
               onViewAttempt={(att) => setViewingAttempt(att)}
             />
           )}
           
-          {status === 'testing' && <TestEngine onComplete={handleComplete} />}
+          {status === 'testing' && <TestEngine onComplete={handleComplete} targetSectionId={targetSectionId} />}
           
           {status === 'completed' && (
-            <Results onBack={handleBackToDashboard} />
+            <Results onBack={handleBackToDashboard} onNavigateToDiagnostics={() => handleStartExam('part-j')} />
           )}
         </>
       )}

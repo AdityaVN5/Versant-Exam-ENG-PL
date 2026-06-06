@@ -179,6 +179,29 @@ export const mockExamData: ExamData = {
               displayPrompt: false
             }
           ]
+        },
+        {
+          id: "part-j",
+          title: "Part J: Diagnostics & Quick Practice Repeat",
+          instructionText: "Listen to the sentence and repeat it exactly. This section works as a high-fidelity diagnostic calibration check to verify speech rate and pronounciation metrics.",
+          itemCountText: "2 Questions",
+          skillsTested: "Microphone levels, physical pronunciation speed, audio clarity, and echo resilience.",
+          questions: [
+            {
+              id: "j-1",
+              type: "speaking",
+              promptText: "The virtual classroom environment provides direct access to tutor feedback.",
+              timeLimit: 15,
+              displayPrompt: false
+            },
+            {
+              id: "j-2",
+              type: "speaking",
+              promptText: "Our speech rating algorithm analyzes pitch variance and speech rate automatically.",
+              timeLimit: 15,
+              displayPrompt: false
+            }
+          ]
         }
       ]
     }
