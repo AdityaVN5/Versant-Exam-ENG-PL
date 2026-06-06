@@ -330,18 +330,6 @@ export default function Results({ attempt, onBack, onNavigateToDiagnostics }: Re
           </div>
         </div>
 
-        {/* Footer */}
-        <footer className="py-12 border-t border-neutral-200 bg-[#FAFAFA] text-center text-xs">
-          <a
-            href="https://adityavn.vercel.app/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-mono font-bold tracking-widest text-neutral-600 hover:text-black transition-colors"
-          >
-            ║▌║█║ FORGED 𝖡𝖸 ADITYA ║█║▌║
-          </a>
-        </footer>
-
       </div>
     </div>
   );

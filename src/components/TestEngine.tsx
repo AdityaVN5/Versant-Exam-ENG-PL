@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { mockExamData } from '../data/mockExamData';
+import { generateRandomExam } from '../data/questions';
 import { QuestionPhase, TestResult, Question } from '../types';
 import { playTTS, playBeep, SilenceDetector } from '../lib/audioUtils';
 import { Mic, Loader2, PlayCircle, EyeOff, CheckCircle, ArrowRight, BookOpen, Compass, Award } from 'lucide-react';
@@ -31,12 +31,11 @@ export default function TestEngine({ onComplete, targetSectionId }: TestEnginePr
   const phaseTimerRef = useRef<NodeJS.Timeout | null>(null);
   const skipTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const currentModule = mockExamData.modules[modIdx];
+  const [examData] = useState(() => generateRandomExam(targetSectionId));
+  const currentModule = examData.modules[modIdx];
   
   // Filter sections if a targetSectionId is passed (e.g. 'part-j' diagnostic)
-  const availableSections = targetSectionId 
-    ? currentModule.sections.filter(s => s.id === targetSectionId)
-    : currentModule.sections;
+  const availableSections = currentModule.sections;
 
   const currentSection = availableSections[secIdx];
   const currentQuestion = currentSection?.questions[qIdx];

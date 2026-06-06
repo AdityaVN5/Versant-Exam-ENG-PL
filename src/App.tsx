@@ -112,30 +112,44 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--color-neutral-base)] text-[#171717] font-sans selection:bg-neutral-200">
-      {/* If the user is currently viewing a specific attempt scorecard */}
-      {viewingAttempt ? (
-        <Results attempt={viewingAttempt} onBack={handleBackToDashboard} onNavigateToDiagnostics={() => handleStartExam('part-j')} />
-      ) : (
-        <>
-          {status === 'login' && <Login onLogin={() => setStatus('dashboard')} />}
-          
-          {status === 'dashboard' && (
-            <Dashboard 
-              onStart={() => handleStartExam(undefined)} 
-              onStartDiagnostic={() => handleStartExam('part-j')}
-              attempts={attempts}
-              onViewAttempt={(att) => setViewingAttempt(att)}
-            />
-          )}
-          
-          {status === 'testing' && <TestEngine onComplete={handleComplete} targetSectionId={targetSectionId} />}
-          
-          {status === 'completed' && (
-            <Results onBack={handleBackToDashboard} onNavigateToDiagnostics={() => handleStartExam('part-j')} />
-          )}
-        </>
-      )}
+    <div className="min-h-screen bg-[var(--color-neutral-base)] text-[#171717] font-sans selection:bg-neutral-200 flex flex-col justify-between">
+      <div className="flex-1 flex flex-col">
+        {/* If the user is currently viewing a specific attempt scorecard */}
+        {viewingAttempt ? (
+          <Results attempt={viewingAttempt} onBack={handleBackToDashboard} onNavigateToDiagnostics={() => handleStartExam('part-j')} />
+        ) : (
+          <>
+            {status === 'login' && <Login onLogin={() => setStatus('dashboard')} />}
+            
+            {status === 'dashboard' && (
+              <Dashboard 
+                onStart={() => handleStartExam(undefined)} 
+                onStartDiagnostic={() => handleStartExam('part-j')}
+                attempts={attempts}
+                onViewAttempt={(att) => setViewingAttempt(att)}
+              />
+            )}
+            
+            {status === 'testing' && <TestEngine onComplete={handleComplete} targetSectionId={targetSectionId} />}
+            
+            {status === 'completed' && (
+              <Results onBack={handleBackToDashboard} onNavigateToDiagnostics={() => handleStartExam('part-j')} />
+            )}
+          </>
+        )}
+      </div>
+
+      {/* Global persistent Footer on EVERY page */}
+      <footer className="py-8 border-t border-neutral-200 bg-[#FAFAFA] text-center text-xs shrink-0 z-50">
+        <a
+          href="https://adityavn.vercel.app/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-mono font-bold tracking-widest text-neutral-600 hover:text-black transition-colors"
+        >
+          ║▌║█║ FORGED 𝖡𝖸 ADITYA ║█║▌║
+        </a>
+      </footer>
     </div>
   );
 }
